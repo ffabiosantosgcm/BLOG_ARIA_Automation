@@ -1,3 +1,5 @@
+name: Primeiro Blueprint no GIT HUB
+version: 1
 formatVersion: 1
 inputs: {}
 resources:
