@@ -1,0 +1,47 @@
+---
+- name: Instalar e configurar o Apache Tomcat
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Instalar o Java (se necessário)
+      yum:
+        name: java-1.8.0-openjdk
+        state: present
+
+    - name: Baixar e descompactar o Apache Tomcat
+      get_url:
+        url: "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.52/bin/apache-tomcat-9.0.52.tar.gz"
+        dest: "/opt/"
+        mode: 0755
+      become: yes
+
+    - name: Descompactar o Tomcat
+      ansible.builtin.unarchive:
+        src: "/opt/apache-tomcat-9.0.52.tar.gz"
+        dest: "/opt/"
+        remote_src: yes
+        owner: SEU_USUARIO_SSH
+        group: SEU_USUARIO_SSH
+      become: yes
+
+    - name: Configurar as permissões do diretório do Tomcat
+      ansible.builtin.file:
+        path: "/opt/apache-tomcat-9.0.52"
+        state: directory
+        owner: SEU_USUARIO_SSH
+        group: SEU_USUARIO_SSH
+        mode: '0755'
+      become: yes
+
+    - name: Configurar variáveis de ambiente do Tomcat
+      ansible.builtin.lineinfile:
+        path: "/etc/environment"
+        line: "CATALINA_HOME=/opt/apache-tomcat-9.0.52"
+        state: present
+        create: yes
+      become: yes
+
+    - name: Iniciar o Tomcat
+      command: "/opt/apache-tomcat-9.0.52/bin/startup.sh"
+      become: yes

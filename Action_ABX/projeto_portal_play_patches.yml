@@ -1,0 +1,11 @@
+---
+- name: Install Applications on CentOS
+  hosts: all
+  tasks:
+    - name: Patch system
+      yum:
+        name: '*'
+        state: latest
+    - name: Create user
+      user:
+        name: "{{ username }}"

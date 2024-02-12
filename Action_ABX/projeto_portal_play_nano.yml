@@ -1,0 +1,15 @@
+---
+- name: Instalar Nano no CentOS 7
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Atualizar o cache de pacotes
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Instalar o Nano
+      yum:
+        name: nano
+        state: present

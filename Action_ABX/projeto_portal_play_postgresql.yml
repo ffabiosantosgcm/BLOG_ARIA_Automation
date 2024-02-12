@@ -1,0 +1,11 @@
+---
+- name: Install Applications on CentOS
+  hosts: all
+  tasks:
+    - name: Install PostgreSQL Server
+      yum:
+        name: postgresql-server
+        state: latest
+    - name: Create user
+      user:
+        name: "{{ username }}"
