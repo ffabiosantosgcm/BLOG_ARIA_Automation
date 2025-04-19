@@ -1,0 +1,245 @@
+#*************************************** Foco do Modelo ****************************************************#
+formatVersion: 1
+name: SO Linux Server
+#*************************************** inputs com workflow ***********************************************#
+inputs:
+  description:
+    type: string
+    title: Descrição
+    description: Resumo rápido do projeto
+  gerente:
+    type: string
+    minLength: 0
+    maxLength: 30
+    title: Gerente de Suporte(Nome)
+    description: Gerente da área da implantação
+  poc_name:
+    type: string
+    title: Equipe
+    description: "Exemplo: ARINF"
+  janela:
+    type: string
+    title: Janela de Manutenção
+    description: "Exemplo: Domingo entre 01:00h e 03:00h"
+  ticket:
+    type: number
+    title: N° da requisição
+    description: "Exemplo: chamado 1578565"
+#*************************************** inputs com workflow ***********************************************#
+#*************************************** inputs Playbooks Ansible ******************************************#
+  Playbook_Test-var-bes:
+    type: boolean
+    Default: false
+    description: Playbook xyz
+    title: Test-var-bes.yml
+  Playbook_Touch_1:
+    type: boolean
+    Default: false
+    description: Playbook que cria um arquivo no /tmp
+    title: Touch_1.yml
+  Playbook_MariaDB:
+    type: boolean
+    Default: false
+    description: Playbook que instala última versão disponível do banco de dados Mariadb
+    title: mariadb.yml
+  Playbook_Nginx:
+    type: boolean
+    Default: false
+    description: Playbook que instala última versão disponível do banco de dados Mariadb
+    title: nginx.yml
+  Playbook_repo_add_oracle_linux:
+    type: boolean
+    Default: false
+    description: Playbook que instala última versão disponível do banco de dados Mariadb
+    title: repo_add_oracle_linux.yml
+ 
+  Playbook_CriarUsuario: # Novo 09042025
+    type: boolean
+    title: Criar usuário
+    default: false
+    description: Informe o nome do usuário a ser criado
+  Playbook_NomeUsuario:
+    type: string
+    title: Nome do usuário
+    description: Informe o nome do usuário a ser criado
+  Playbook_SenhaUsuario:
+    type: string
+    title: Senha do usuário
+    description: Informe a senha do usuário
+    encrypted: true # Novo 09042025
+
+  Playbook_ConfiguraProxy: # Novo 09042025
+    type: boolean
+    title: Configura Proxy
+    default: false
+    description: Informe o nome do usuário a ser criado
+  Playbook_ProxyUsuario:
+    type: string
+    title: Nome do usuário proxy
+    description: Informe o nome do usuário a ser criado
+  Playbook_ProxySenha:
+    type: string
+    title: Senha do usuário proxy
+    description: Informe a senha do usuário
+    encrypted: true # Novo 09042025
+  Playbook_Adicionar_Linux_ao_Dominio_Banese:
+    type: boolean
+    Default: false
+    description: Playbook que adiciona a VM Linux ao domínio banese.com.br.
+    title: adicionar_linux_ao_dominio.yml
+  # Playbook_certificado_hg_repo:
+  #   type: boolean
+  #   Default: false
+  #   description: Playbook que .....
+  #   title: certificado_hg_repo.yml
+  Ansible_groups:
+    type: string
+    title: Ansible_groups
+    description: ATENÇÃO! Deve ser sempre relacionado ao nome do projeto
+    default: null #lisar os grupos disponíveis para uso
+    string:
+      - descricao_
+#*************************************** inputs Playbooks Ansible ******************************************#
+#*************************************** inputs Ansible ****************************************************#
+  installedOS:
+    type: string
+    title: Sistema Operacional
+    description: Selecione o Sistema Operacional.
+    default: ARIA_ORACLE_LINUX_R9U3
+    enum:
+      # - ARIA_LINUX_PREPARE
+      - ARIA_ORACLE_LINUX_R9U3
+      - ARIA_Lnx_Oracle8_x64
+# Seleção do tamanho do SO
+  size: #Novo
+    type: string
+    title: Tamanho da implantação
+    description: Selecione o tamanho da VM que será implantada.
+    default: "Small: 2 vCPU w/ 4GB RAM"
+    enum:
+      - "Small: 2 vCPU w/ 4GB RAM"
+      - "Medium: 4 vCPU w/ 8GB RAM"
+      - "Large: 6 vCPU w/ 12GB RAM"
+      - "X-Large: 8 vCPU w/ 16GB RAM"
+      - "2X-Large: 12 vCPU w/ 32GB RAM"
+#*************************************** inputs Ansible ****************************************************#
+# Discos adicionais      
+  discoadicional:
+    type: array
+    title: Discos adicionais
+    description: Até 4 discos extra por instância
+    minItems: 0
+    maxItems: 4
+    items:
+      type: object
+      properties:
+        size:
+          type: integer
+          title: Tamanho do disco (GB)
+          minimum: 1
+          maximum: 50
+        SCSIController:
+          type: string
+          title: SCSI Controller
+          enum:
+            - SCSI_Controller_1
+            - SCSI_Controller_2
+            - SCSI_Controller_3
+        # Unidade:
+        #   type: string
+        #   title: Unidade
+        #   enum:
+        #     - G
+        #     - H
+        #     - I
+        #     - J
+#*************************************** inputs Ansible ****************************************************#
+#*************************************** resources *********************************************************#
+resources:
+  Cloud_Ansible_1:
+    type: Cloud.Ansible
+    ignoreChanges: true # novo https://docs.vmware.com/en/vRealize-Automation/8.11/Using-and-Managing-Cloud-Assembly/GUID-B76918AE-D18D-4821-B160-F0CFAE173359.html
+    properties:
+      account: Ansible-VMware
+      inventoryFile: /etc/ansible/Aria_db_restore_hosts
+      groups:
+        - ${input.Ansible_groups}
+      # count: ${input.Instancias_vm}
+      host: ${resource.Linux.*}
+      username: root
+      password: ${secret.Conta_template_Linux}
+       #privateKeyFile: ~/.ssh/id_rsa #use isso aqui depois
+      osType: linux
+      maxConnectionRetries: 20
+      maxJobRetries: 2
+      playbooks:
+        provision:
+          - '${input.Playbook_Test-var-bes == true ?  "/etc/ansible/playbooks/test-var-bes.yml" :  ""}'
+          - '${input.Playbook_Touch_1 == true ?  "/etc/ansible/playbooks/Touch_1.yml" :  ""}'
+          - '${input.Playbook_MariaDB == true ?  "/etc/ansible/playbooks/mariadb.yml" :  ""}'
+          - '${input.Playbook_Nginx == true ?  "/etc/ansible/playbooks/nginx.yml" :  ""}'
+          # - '${input.Playbook_CriarUsuario == true ?  "/etc/ansible/playbooks/DEV_create_user.yml" :  ""}'
+          - '${input.Playbook_CriarUsuario == true || input.Playbook_ConfiguraProxy == true ? "/etc/ansible/main_roles/DEV_Config_Default_Oracle9.yml" : ""}'
+          # - '${input.Playbook_certificado_hg_repo == true ?  "/etc/ansible/playbooks/certificado_hg_repo.yml" :  ""}'
+          # - '${input.Playbook_certificado_hg_repo == true ?  "/etc/ansible/main_roles/main_certificado_hg_repo.yml" :  ""}'
+          - '${input.Playbook_Adicionar_Linux_ao_Dominio_Banese == true ?  "/etc/ansible/playbooks/adicionar_linux_ao_dominio.yml" :  ""}'
+          # - '${input.Playbook_repo_add_oracle_linux == true ?  "/etc/ansible/playbooks/repo_add_oracle_linux.yml" :  ""}'
+        # de-provision: # Este bloco define quais playbooks Ansible devem ser executados quando a máquina for destruída ou descomissionada: Remover a máquina do domínio, Excluir usuários criados,Fazer algum tipo de backup ou limpeza,Desativar monitoramento ou agentes.
+        #   - /home/playbooks/remove_domain_playbook.yml
+      hostVariables:
+        vmName: ${resource.Linux.resourceName}
+        ip: ${resource.Linux.address}
+        # Variáveis para criar usuários.
+        new_user: ${input.Playbook_NomeUsuario}
+        new_password: ${input.Playbook_SenhaUsuario}
+        # Variáveis para adicionar informações de proxy.  
+        proxy_user: ${input.Playbook_ProxyUsuario}
+        proxy_password: ${input.Playbook_ProxySenha}
+        # Variáveis para adicionar VM ao domínio.
+        useradd: usr_vicenter
+        password: ${secret.vsphere_password}
+  Linux:
+    type: Cloud.vSphere.Machine
+    preventDelete: true
+    # allocatePerInstance: true # novo https://docs.vmware.com/en/vRealize-Automation/8.11/Using-and-Managing-Cloud-Assembly/GUID-B76918AE-D18D-4821-B160-F0CFAE173359.html
+    properties:
+      image: ${input.installedOS}
+      flavor: ${input.size}
+      poc: ${input.poc_name}
+      ticket: ${input.ticket}
+      description: ${input.description}
+      ger: ${input.gerente}
+      jan: ${input.janela}
+      deploymentName: ${env.deploymentName}
+      discoadicional: ${input.discoadicional}
+      attachedDisks: ${map_to_object(slice(resource.Discos[*].id, length(input.discoadicional)*count.index, length(input.discoadicional)*(count.index+1)), "source")}
+      networks:
+        - network: ${resource.Network_1.id}
+          assignment: static
+          assignIPv6Address: false
+          assignPublicIpAddress: false
+      # count: ${input.Instancias_vm}
+      storage: # adicionado
+        constraints:
+          - tag: storage:ST_HBES_BKP_8000-CAB
+  Discos:
+    type: Cloud.vSphere.Disk
+    allocatePerInstance: true
+    properties:
+      SCSIController: "${(count.index < length(input.discoadicional) ? input.discoadicional[count.index].SCSIController : input.discoadicional[(count.index % length(input.discoadicional))].SCSIController)}"
+      capacityGb: "${(count.index < length(input.discoadicional) ? input.discoadicional[count.index].size : input.discoadicional[(count.index % length(input.discoadicional))].size)}"
+      count: ${length(input.discoadicional)}
+  Network_1:
+    type: Cloud.vSphere.Network
+    properties:
+      networkType: existing
+      constraints:
+        # - tag: ${'Environment:' + (input.Ambiente)}
+        - tag: Environment:mgmt
+  #*************************************** Custom Resources ***************************************#
+  # Custom_CR_ACI_EPG_INTEGRATION_1:
+  #   type: Custom.CR_ACI_EPG_INTEGRATION
+  #   dependsOn:
+  #     - Network_1
+  #   properties:
+  #     epg_deployment_name: ${env.deploymentName}
